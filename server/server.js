@@ -59,7 +59,7 @@ app.delete('/todos/:id', (req, res) => {
         if(!todo){ //Runs if nothing was deleted because it still resolves even if 0 docs deleted
             return res.status(404).send();
         }
-        res.status(200).send(todo);
+        res.status(200).send({todo});
     }).catch((e) => {
         res.status(400).send();
     });
