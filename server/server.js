@@ -1,5 +1,6 @@
-var express = require('express');
-var bodyParser = require('body-parser');
+const _ = require('lodash');
+const express = require('express');
+const bodyParser = require('body-parser');
 
 const {ObjectID} = require('mongodb');
 var {mongoose} = require('./db/mongoose');
@@ -68,6 +69,33 @@ app.delete('/todos/:id', (req, res) => {
             //if doc send doc and 200
         //error
             //400 with empty body
+});
+
+app.patch('/todos/:id', (req, res) => {  // Takes PATCH command and individual ID with body containing text and completed then updates that todo and sets date if completed is true
+    var id = req.params.id;
+    var body = _.pick(req.body, ['text', 'completed']); // Subset of things user passed in, body which will contain object attributes and we can set it directly to db. Doesnt let user set system params like completedAt
+
+    if(!ObjectID.isValid(id)){
+        return res.status(404).send()
+    }
+
+    if(_.isBoolean(body.completed) && body.completed){ //Runs if completed is a boolean and true
+        body.completedAt = new Date().getTime(); // # of milliseconds from Unix epoch 1970
+    } 
+    else {
+        body.completed = false;
+        body.completedAt = null;
+    }
+
+    Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo)=> { 
+        if(!todo){
+            console.log(body)
+            return res.status(404).send();
+        }
+        res.send({todo});
+    }).catch((e) => {
+        res.status(400).send();
+    })
 });
 
 app.listen(port, () => {
