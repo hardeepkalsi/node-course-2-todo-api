@@ -97,6 +97,21 @@ app.patch('/todos/:id', (req, res) => {  // Takes PATCH command and individual I
     })
 });
 
+app.post('/users', (req, res) => {
+    body = _.pick(req.body, ['email', 'password']);
+    var user = new User(body);
+
+    
+
+    user.save().then(() => { // When the user is successfully saved, generate auth token and add to user via instance method and return a promise with token
+        return user.generateAuthToken(); // Retrieves chained promise so we can add it on to user.save here rather than just returning token
+    }).then((token) => { // Taking return value of first promise after generateAuthToken resolves which is a promise which returns a token and 
+        res.header('x-auth', token).send(user);
+    }).catch((e) => {
+        res.status(400).send(e);
+    });
+});
+
 app.listen(port, () => {
     console.log(`Started on ${port}`);
 });
