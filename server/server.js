@@ -6,6 +6,7 @@ const {ObjectID} = require('mongodb');
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
+var {authenticate} = require('./middleware/authenticate');
 
 var app = express();
 const port = process.env.PORT;
@@ -100,16 +101,19 @@ app.patch('/todos/:id', (req, res) => {  // Takes PATCH command and individual I
 app.post('/users', (req, res) => {
     body = _.pick(req.body, ['email', 'password']);
     var user = new User(body);
-
-    
-
+    // When user resolves it also returns a resolved promise whose return value we can look at in the .then(success) handler
+    // generateAuthToken calls user.save on the new user with token on success resolves with the token passed to it. Use then.success if it resolves to access token
     user.save().then(() => { // When the user is successfully saved, generate auth token and add to user via instance method and return a promise with token
-        return user.generateAuthToken(); // Retrieves chained promise so we can add it on to user.save here rather than just returning token
-    }).then((token) => { // Taking return value of first promise after generateAuthToken resolves which is a promise which returns a token and 
+        return user.generateAuthToken(); // Retrieves user.save promise which resolves into a token value, when user is saved return the token we added to user
+    }).then((token) => { // generateAuthToken returns a promise which resolves and returns a token, to access this token we tack on a then call success handler
         res.header('x-auth', token).send(user);
     }).catch((e) => {
         res.status(400).send(e);
     });
+});
+
+app.get('/users/me', authenticate, (req, res) => {
+    res.send(req.user);
 });
 
 app.listen(port, () => {
